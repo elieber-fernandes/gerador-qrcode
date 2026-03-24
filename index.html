@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de QR Code com Logo</title>
-    <script src="https://cdn.jsdelivr.net/npm/qr-creator/dist/qr-creator.min.js"></script>
+    <title>Gerador de QR Code</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
-        /* CSS Mantido e Aprimorado do exemplo anterior */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f4f9;
@@ -27,7 +26,7 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             text-align: center;
             width: 100%;
-            max-width: 380px; /* Um pouco mais largo para acomodar o canvas */
+            max-width: 350px;
             box-sizing: border-box;
         }
 
@@ -84,27 +83,22 @@
         .btn-success { background-color: #28a745; margin-top: 15px; }
         .btn-success:hover { background-color: #218838; }
 
-        /* O container do QR Code agora exibe o Canvas diretamente */
-        #qrcode-canvas {
+        #qrcode {
             margin-top: 25px;
-            display: none; /* Escondido inicialmente */
+            display: flex;
             justify-content: center;
             padding: 10px;
             background: #fff;
             border-radius: 5px;
-            /* Garante que o canvas não extrapole o container */
-            max-width: 100%; 
-            height: auto;
         }
 
         #link-download { display: none; }
-
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>QR Code com Logo</h1>
+        <h1>Gerador de QR Code</h1>
 
         <div class="input-group">
             <label for="texto">Digite o Link ou Texto:</label>
@@ -124,33 +118,26 @@
 
         <button id="btn-gerar" class="btn btn-primary">Gerar QR Code</button>
 
-        <div style="display: flex; justify-content: center;">
-            <canvas id="qrcode-canvas"></canvas>
-        </div>
+        <div id="qrcode"></div>
 
-        <a id="link-download" class="btn btn-success" download="qrcode-com-logo.png">Baixar Imagem</a>
+        <a id="link-download" class="btn btn-success" download="qrcode.png">Baixar Imagem</a>
     </div>
 
     <script type="text/javascript">
-        const canvas = document.getElementById("qrcode-canvas");
+        const qrcodeContainer = document.getElementById("qrcode");
         const linkDownload = document.getElementById("link-download");
         const btnGerar = document.getElementById("btn-gerar");
         const inputTexto = document.getElementById("texto");
 
-        // --- CONFIGURAÇÃO DA LOGO ---
-        // SUBSTITUA ESTE URL PELA SUA LOGO (Pode ser um caminho local ou URL)
-        // DICA: Use uma imagem quadrada e com fundo transparente (PNG)
-        const URL_DA_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Instagram_icon.png/120px-Instagram_icon.png';
-        const TAMANHO_QR = 300; // Tamanho final do QR Code (px)
-        const PERCENTUAL_LOGO = 0.20; // A logo ocupará 20% do tamanho do QR
+        btnGerar.addEventListener("click", gerarQR);
 
-        btnGerar.addEventListener("click", gerarQRComLogo);
-
-        inputTexto.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") gerarQRComLogo();
+        inputTexto.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                gerarQR();
+            }
         });
 
-        async function gerarQRComLogo() {
+        function gerarQR() {
             const textoValue = inputTexto.value.trim();
             const corEscura = document.getElementById("corEscura").value;
             const corClara = document.getElementById("corClara").value;
@@ -161,71 +148,37 @@
                 return;
             }
 
-            // 1. Limpa o canvas e esconde o download
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Limpa o QR Code anterior e esconde o botão de download
+            qrcodeContainer.innerHTML = "";
             linkDownload.style.display = "none";
-            canvas.style.display = "none";
 
-            // 2. Gera o QR Code básico no Canvas
-            QrCreator.render({
+            // Cria o novo QR Code
+            new QRCode(qrcodeContainer, {
                 text: textoValue,
-                radius: 0, // 0 para blocos quadrados, 0.5 para arredondados
-                ecLevel: 'H', // Nível de Correção H (Alto) é essencial para logos
-                fill: corEscura,
-                background: corClara,
-                size: TAMANHO_QR
-            }, canvas);
+                width: 200,
+                height: 200,
+                colorDark : corEscura,
+                colorLight : corClara,
+                correctLevel : QRCode.CorrectLevel.H
+            });
 
-            // 3. Sobrepõe a Logo (Processo Assíncrono)
-            try {
-                await desenharLogoNoCentro(canvas, URL_DA_LOGO);
-                
-                // 4. Finaliza: Mostra o resultado e prepara o download
-                canvas.style.display = "block";
-                linkDownload.href = canvas.toDataURL("image/png");
-                linkDownload.style.display = "block";
-            } catch (error) {
-                console.error("Erro ao carregar a logo:", error);
-                alert("O QR Code foi gerado, mas não foi possível carregar a logo central.");
-                // Mesmo sem logo, mostra o QR básico
-                canvas.style.display = "block";
-                linkDownload.href = canvas.toDataURL("image/png");
-                linkDownload.style.display = "block";
-            }
+            // Prepara o download após um breve tempo para garantir a renderização
+            setTimeout(prepararDownload, 100);
         }
 
-        // Função que desenha a logo no centro do canvas já existente
-        function desenharLogoNoCentro(canvas, logoUrl) {
-            return new Promise((resolve, reject) => {
-                const ctx = canvas.getContext('2d');
-                const img = new Image();
-                img.crossOrigin = "Anonymous"; // Evita erros de CORS se a imagem for externa
-                img.src = logoUrl;
+        function prepararDownload() {
+            const imagem = qrcodeContainer.querySelector("img");
 
-                img.onload = () => {
-                    // Calcula tamanho e posição da logo
-                    const logoSize = TAMANHO_QR * PERCENTUAL_LOGO;
-                    const x = (TAMANHO_QR - logoSize) / 2;
-                    const y = (TAMANHO_QR - logoSize) / 2;
-
-                    // --- MELHORIA DE LEITURA ---
-                    // Desenha um círculo/quadrado branco atrás da logo para garantir contraste
-                    ctx.fillStyle = document.getElementById("corClara").value; // Usa a cor de fundo escolhida
-                    ctx.beginPath();
-                    // Desenha um círculo um pouco maior que a logo
-                    ctx.arc(TAMANHO_QR / 2, TAMANHO_QR / 2, (logoSize / 2) * 1.1, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    // Desenha a logo
-                    ctx.drawImage(img, x, y, logoSize, logoSize);
-                    resolve();
-                };
-
-                img.onerror = () => {
-                    reject(new Error("Falha ao carregar imagem da logo."));
-                };
-            });
+            if (imagem && imagem.src) {
+                linkDownload.href = imagem.src;
+                linkDownload.style.display = "block";
+            } else {
+                const canvas = qrcodeContainer.querySelector("canvas");
+                if (canvas) {
+                    linkDownload.href = canvas.toDataURL("image/png");
+                    linkDownload.style.display = "block";
+                }
+            }
         }
     </script>
 
