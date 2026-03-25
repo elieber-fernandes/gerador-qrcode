@@ -252,6 +252,30 @@
             text-transform: uppercase;
         }
 
+        .color-input-wrapper.color-warning {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+        }
+
+        .color-warning-msg {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--danger);
+            margin-top: 8px;
+        }
+
+        .color-warning-msg.visible {
+            display: flex;
+        }
+
+        .color-warning-msg i[data-lucide] {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
         /* Button */
         .btn {
             display: inline-flex;
@@ -567,6 +591,10 @@
                     <span style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: block;">Fundo</span>
                 </div>
             </div>
+            <div class="color-warning-msg" id="color-warning">
+                <i data-lucide="alert-triangle"></i>
+                <span>As cores do código e do fundo não podem ser iguais.</span>
+            </div>
         </div>
 
         <!-- Tamanho e Correção -->
@@ -681,13 +709,28 @@
             }, 3000);
         }
 
+        // --- Color warning elements ---
+        const colorWarning = document.getElementById('color-warning');
+        const colorWrapperEscura = inputCorEscura.closest('.color-input-wrapper');
+        const colorWrapperClara = inputCorClara.closest('.color-input-wrapper');
+
+        function checkColorEquality() {
+            const equal = inputCorEscura.value.toLowerCase() === inputCorClara.value.toLowerCase();
+            colorWarning.classList.toggle('visible', equal);
+            colorWrapperEscura.classList.toggle('color-warning', equal);
+            colorWrapperClara.classList.toggle('color-warning', equal);
+            return equal;
+        }
+
         // --- Color hex display ---
         inputCorEscura.addEventListener('input', () => {
             hexEscura.textContent = inputCorEscura.value.toUpperCase();
+            checkColorEquality();
             triggerLivePreview();
         });
         inputCorClara.addEventListener('input', () => {
             hexClara.textContent = inputCorClara.value.toUpperCase();
+            checkColorEquality();
             triggerLivePreview();
         });
 
@@ -720,6 +763,13 @@
                 if (!isPreview) {
                     showToast('Digite um link ou texto para gerar o QR Code.', 'error');
                     inputTexto.focus();
+                }
+                return;
+            }
+
+            if (checkColorEquality()) {
+                if (!isPreview) {
+                    showToast('As cores do código e do fundo não podem ser iguais!', 'error');
                 }
                 return;
             }
